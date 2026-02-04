@@ -1,8 +1,4 @@
-import { refreshApex } from "@salesforce/apex";
-import completeTodoTask from "@salesforce/apex/TodoHandler.completeTodoTask";
-import getCompletedTasks from "@salesforce/apex/TodoHandler.getCompletedTasks";
-import getTodoTasks from "@salesforce/apex/TodoHandler.getTodoTasks";
-import returnTodoTask from "@salesforce/apex/TodoHandler.returnTodoTask";
+import getTodos from "@salesforce/apex/TodoHandler.getTodos";
 import TODO_OBJECT from "@salesforce/schema/Todo__c";
 import CREATED_ON_FIELD from "@salesforce/schema/Todo__c.Created_On__c";
 import DESC_FIELD from "@salesforce/schema/Todo__c.Description__c";
@@ -11,12 +7,9 @@ import { createRecord } from "lightning/uiRecordApi";
 import { LightningElement, wire } from "lwc";
 
 export default class TodoApp extends LightningElement {
-  @wire(getTodoTasks)
+  @wire(getTodos)
   pendingTasks;
-
-  @wire(getCompletedTasks)
-  completedTasks;
-
+  // @track completedTasks = [];
   newTask = "";
 
   handleNewTask(event) {
@@ -36,9 +29,7 @@ export default class TodoApp extends LightningElement {
     try {
       await createRecord(recordInput);
       this.newTask = "";
-      await refreshApex(this.pendingTasks);
     } catch (error) {
-      console.error(error);
       this.dispatchEvent(
         new ShowToastEvent({
           title: "Error creating record",
@@ -49,15 +40,24 @@ export default class TodoApp extends LightningElement {
     }
   }
 
-  async handleCompleteTask(event) {
-    try {
-      const id = event.target.dataset.id;
-      await completeTodoTask({ taskId: id });
-      await refreshApex(this.pendingTasks);
-      await refreshApex(this.completedTasks);
-    } catch (error) {
-      console.error(error);
-      this.dispatchEvent(
+  // handleCompleteTask(event) {
+  //   const id = event.target.dataset.id;
+  //   const completedTask = this.pendingTasks.find((task) => task.id === id);
+  //   completedTask.completed = true;
+  //   this.completedTasks = [...this.completedTasks, completedTask];
+  //   const newTasks = this.pendingTasks.filter((task) => task.id !== id);
+  //   this.pendingTasks = newTasks;
+  // }
+
+  // handleReturnTask(event) {
+  //   const id = event.target.dataset.id;
+  //   const returnedTask = this.completedTasks.find((task) => task.id === id);
+  //   returnedTask.completed = false;
+  //   this.pendingTasks = [...this.pendingTasks, returnedTask];
+  //   const newTasks = this.completedTasks.filter((task) => task.id !== id);
+  //   this.completedTasks = newTasks;
+  // }
+}
         new ShowToastEvent({
           title: "Error updating record",
           variant: "error"
