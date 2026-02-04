@@ -1,42 +1,85 @@
-import { LightningElement, track } from "lwc";
+import { refreshApex } from "@salesforce/apex";
+import completeTodoTask from "@salesforce/apex/TodoHandler.completeTodoTask";
+import getCompletedTasks from "@salesforce/apex/TodoHandler.getCompletedTasks";
+import getTodoTasks from "@salesforce/apex/TodoHandler.getTodoTasks";
+import returnTodoTask from "@salesforce/apex/TodoHandler.returnTodoTask";
+import TODO_OBJECT from "@salesforce/schema/Todo__c";
+import CREATED_ON_FIELD from "@salesforce/schema/Todo__c.Created_On__c";
+import DESC_FIELD from "@salesforce/schema/Todo__c.Description__c";
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
+import { createRecord } from "lightning/uiRecordApi";
+import { LightningElement, wire } from "lwc";
 
 export default class TodoApp extends LightningElement {
-  @track pendingTasks = [];
-  @track completedTasks = [];
-  @track newTask = "";
+  @wire(getTodoTasks)
+  pendingTasks;
+
+  @wire(getCompletedTasks)
+  completedTasks;
+
+  newTask = "";
 
   handleNewTask(event) {
     this.newTask = event.target.value;
   }
 
-  handleSubmitTask() {
+  async handleSubmitTask() {
     if (this.newTask === "") return;
-    const task = {
-      id: crypto.randomUUID(),
-      desc: this.newTask,
-      completed: false,
-      date: new Date().toString()
+    const fields = {
+      [DESC_FIELD.fieldApiName]: this.newTask,
+      [CREATED_ON_FIELD.fieldApiName]: new Date()
     };
-    this.pendingTasks = [...this.pendingTasks, task];
-    this.newTask = "";
+    const recordInput = {
+      apiName: TODO_OBJECT.objectApiName,
+      fields
+    };
+    try {
+      await createRecord(recordInput);
+      this.newTask = "";
+      await refreshApex(this.pendingTasks);
+    } catch (error) {
+      console.error(error);
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "Error creating record",
+          message: error,
+          variant: "error"
+        })
+      );
+    }
   }
 
-  handleCompleteTask(event) {
-    console.log(event.target.dataset.id);
-    const id = event.target.dataset.id;
-    const completedTask = this.pendingTasks.find((task) => task.id === id);
-    completedTask.completed = true;
-    this.completedTasks = [...this.completedTasks, completedTask];
-    const newTasks = this.pendingTasks.filter((task) => task.id !== id);
-    this.pendingTasks = newTasks;
+  async handleCompleteTask(event) {
+    try {
+      const id = event.target.dataset.id;
+      await completeTodoTask({ taskId: id });
+      await refreshApex(this.pendingTasks);
+      await refreshApex(this.completedTasks);
+    } catch (error) {
+      console.error(error);
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "Error updating record",
+          variant: "error"
+        })
+      );
+    }
   }
 
-  handleReturnTask(event) {
-    const id = event.target.dataset.id;
-    const returnedTask = this.completedTasks.find((task) => task.id === id);
-    returnedTask.completed = false;
-    this.pendingTasks = [...this.pendingTasks, returnedTask];
-    const newTasks = this.completedTasks.filter((task) => task.id !== id);
-    this.completedTasks = newTasks;
+  async handleReturnTask(event) {
+    try {
+      const id = event.target.dataset.id;
+      await returnTodoTask({ taskId: id });
+      await refreshApex(this.pendingTasks);
+      await refreshApex(this.completedTasks);
+    } catch (error) {
+      console.error(error);
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "Error updating record",
+          variant: "error"
+        })
+      );
+    }
   }
 }

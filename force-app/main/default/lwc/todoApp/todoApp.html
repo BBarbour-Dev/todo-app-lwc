@@ -20,18 +20,19 @@
     <div
       style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px"
     >
-      <template for:each={pendingTasks} for:item="task">
+      <template for:each={pendingTasks.data} for:item="task">
         <div
-          key={task.id}
+          key={task.Id}
           class="slds-box slds-box_x-small"
           style="display: flex; gap: 12px"
         >
           <lightning-input
             type="checkbox"
-            data-id={task.id}
+            data-id={task.Id}
             onclick={handleCompleteTask}
+            value={task.Completed__c}
           ></lightning-input>
-          <p>{task.desc}</p>
+          <p>{task.Description__c}</p>
         </div>
       </template>
     </div>
@@ -41,19 +42,19 @@
     <div
       style="margin-top: 12px; display: flex; flex-direction: column; gap: 12px"
     >
-      <template for:each={completedTasks} for:item="task">
+      <template for:each={completedTasks.data} for:item="task">
         <div
-          key={task.id}
+          key={task.Id}
           class="slds-box slds-box_x-small"
           style="display: flex; gap: 12px"
         >
           <lightning-input
             type="checkbox"
-            data-id={task.id}
+            data-id={task.Id}
             onclick={handleReturnTask}
-            checked={task.completed}
+            checked={task.Completed__c}
           ></lightning-input>
-          <p><s>{task.desc}</s></p>
+          <p><s>{task.Description__c}</s></p>
         </div>
       </template>
     </div>
